@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
+import 'package:flutter/services.dart';
 
 void main() {
   runApp(const MyApp());
 }
+// 应用程序的State类保存当前应用程序状态。扩展该类已保存当前电池状态
+// 首先，构造通道。使用MethodChannel返回电池电量的单一平台状态
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -56,7 +60,23 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   int _counter = 0;
-
+  // 通道的客户端和主机端通过通道构造函数中传递的通道名称进行连接。单个应用中使用的所有通道名称都必须是唯一的；请在通道名称前加上唯一的域前缀
+  // 例如：samples.flutter.dev/battery
+  static const platform = MethodChannel('com.example.new_window/battery');
+  // Get battery level
+  String _batteryLevel = 'Unknown battery level.';
+  Future<void> _getBatteryLevel() async {
+    String batteryLevel;
+    try {
+      final result = await platform.invokeMethod<int>('getBatteryLevel');
+      batteryLevel = 'Battery level at $result % .';
+    } on PlatformException catch(e) {
+      batteryLevel = "Failed to get battery level: '${e.message}";
+    }
+    setState(() {
+      _batteryLevel = batteryLevel;
+    });
+  }
   void _incrementCounter() {
     setState(() {
       // This call to setState tells the Flutter framework that something has
@@ -111,6 +131,16 @@ class _MyHomePageState extends State<MyHomePage> {
             Text(
               '$_counter',
               style: Theme.of(context).textTheme.headlineMedium,
+            ),
+            Column(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                ElevatedButton(
+                  onPressed: _getBatteryLevel,
+                  child: const Text('Get Battery Level')
+                ),
+                Text(_batteryLevel)
+              ],
             ),
           ],
         ),
